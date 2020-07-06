@@ -12,6 +12,11 @@ int speakerPin = 4;
 int hallSensorPin1 = A6;
 int hallSensorPin2 = A5;
 int light = 3;
+int vial1 = A1;
+int vial2 = A2;
+int vial3 = A3;
+int vial4 = A4;
+
 //Speeds assigned to each MagForm +/-. SpeedOne = slowest, speedFour = fastest
 int speedOne = 250;
 int speedTwo = 130;
@@ -20,21 +25,15 @@ int speedFour = 20;
 
 int relayPin = 12;
 
+//Global vars
 int resetCount = 0;
-
 // State of the sensor reading dictating speed of geiger output to speaker.
 int state = 0;
 int vialState = 0;
 
-int vial1 = A1;
-int vial2 = A2;
-int vial3 = A3;
-int vial4 = A4;
-
 void success(){
-  Serial.println("You have won and now the lock will open.");
-  //Make Lights go
-
+  if(isDebug) {Serial.println("success: In setup");}
+  //trip relay for 12v Lock
   digitalWrite(relayPin, HIGH);
   delay(5000);
   digitalWrite(relayPin, LOW);
@@ -83,7 +82,7 @@ void loop() {
 
 // Speed of the geiger sound func
 void giegerSoundLoop(int intensity){
-  Serial.println("A");
+  if(isDebug) {Serial.println("giegerSoundLoop: Start");}
     int randomSpeed = random(intensity - 20, intensity + 30);
     
     analogWrite(speakerPin, 255);
@@ -91,30 +90,23 @@ void giegerSoundLoop(int intensity){
     analogWrite(speakerPin, 0);
     delay(randomSpeed);
 
-    if(intensity == speedTwo){
-      Serial.println("B");
-      if(playSoundButton.pressedFor(15000)){
-        Serial.println("C");
-        resetCount++;
-
-       
+    if(intensity == speedTwo && playSoundButton.pressedFor(15000)){
+          resetCount++;
           Serial.println("D");
           success();
           resetCount = 0;
-
-      }
     }
 }
 
 void SM_GiegerVials(){
   switch(vialState){
     case 0:
-    Serial.println("vialState ZERO");
+    if(isDebug){Serial.println("vialState ZERO");}
     digitalWrite(light, LOW);
     vialState = 1;
     break;
-    case 1:
     
+    case 1:
     int high = 350; //less than this
     int medHigh = 440; // // apply deviation above this to get range
     int medLow = 564; // apply deviation above this to get range
@@ -158,8 +150,7 @@ void SM_GiegerVials(){
     } else {
       vial4Placed = false;
     }
-
-    
+ 
     if(vial1Placed && vial2Placed && vial3Placed && vial4Placed){
       vial1Placed = false;
       vial2Placed = false;
@@ -169,22 +160,18 @@ void SM_GiegerVials(){
       success();
       vialState = 2;
     } else {
-      //Serial.println("still Not correctYet");
+      if(isDebug){ Serial.println("still Not correctYet"); }
     }
     
     break;
     
     case 2:
-    Serial.println("DUDE");
     delay(3000);
-    
     vialState = 0;
     break;
     
     default:
-    
-    break;
-    
+    break; 
   }
 
 delay(50);
@@ -193,7 +180,6 @@ delay(50);
 
 //State Machine for reading sensor and picking state to play geiger sound on repeat untill new state is read from sensor
 void SM_Gieger(){
-  Serial.println("IN THE Sound SECTION");
   // reading sensor to determine speed/state
   int reading1 = (514 - analogRead(hallSensorPin1));
   int reading2 = (514 - analogRead(hallSensorPin2));
@@ -211,40 +197,32 @@ void SM_Gieger(){
 
   if (reading1 > 101 || reading2 > 101 ){
     if(isDebug) {Serial.println("Magnet is High");}
-    
-
     state = 4;
   }
 
   
   if(reading1 > 10 && reading1 <= 100 || reading2 > 10 && reading2 <= 100){
     if(isDebug) {Serial.println("Magnet is Medium-High");}
-    
-
     state = 3;
   }
   
   if (reading1 < -9 && reading1 >= -40){
      if(isDebug) {Serial.println("Magnet is Medium-Low");}
-     
-
      state = 2;
   } 
   
   if(reading1 < -24){
     if(isDebug) {Serial.println("Magnet is Low");}
-    
     state = 1;
   }
 
   if(reading1 >= -10 && reading1 <= 10){
     if(isDebug) {Serial.println("Magnet is Neutral, no sound");}
-    
     state = 0;
   }
+  
 // State Management
   switch(state){
-    
     case 0:
       if(isDebug) {Serial.println("State 0");}
       digitalWrite(light, HIGH);
@@ -253,24 +231,20 @@ void SM_Gieger(){
     
     case 1:
       if(isDebug) {Serial.println("State 1");}
-      
       giegerSoundLoop(speedOne);
     break;
     
     case 2:
       if(isDebug) {Serial.println("State 2");}
-      
       giegerSoundLoop(speedTwo);
     break;
     
     case 3:
       if(isDebug) {Serial.println("State 3");}
-      
       giegerSoundLoop(speedThree);
     break;
     case 4:
       if(isDebug) {Serial.println("State 4");}
-      
       giegerSoundLoop(speedFour);
     break;
     
